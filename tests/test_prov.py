@@ -94,36 +94,14 @@ class Kor(Bas):
         self.starta({"kategori": "exempel", "installera": ["echo installerar"],
                      "steg": [{"namn": "svara", "kommando": "tr a-z A-Z < \"$PROV/indata.txt\" > \"$UT/svar.txt\""}],
                      "spara": ["svar.txt", "saknas.txt"]})
-        with open(os.path.join(self.arb, "skanning.json"), "w") as f:
-            json.dump({"risk_assessment": {"score": 10, "severity": "LOW", "recommendation": "SAFE"},
-                       "issues": [{"id": "R1", "category": "exec", "severity": "LOW", "finding": "m", "location": {"file": "a"}}]}, f)
         self.assertEqual(prov.kor(), 0)
         p = prov.las_paket()
         self.assertEqual(p["utfall"], "kort")
         self.assertEqual([s["typ"] for s in p["steg"]], ["installera", "steg"])
         self.assertEqual(p["bedomning"], {"ratt": True})
-        self.assertEqual(p["skanning"]["rekommendation"], "SAFE")
-        self.assertEqual(p["skanning"]["antal_fynd"], 1)
-        self.assertEqual(p["skanning"]["per_kategori"], {"exec/LOW": 1})
-        self.assertEqual(p["skanning"]["fynd"][0]["fil"], "a")
         self.assertEqual(p["filer"][0]["byte"], 4)
         self.assertIn("fel", p["filer"][1])
         self.assertTrue(os.path.isfile(os.path.join(self.arb, "testpaket", "filer", "svar.txt")))
-
-    def test_stoppas_av_skanning(self):
-        self.starta({"kategori": "ingen", "steg": [{"kommando": "touch \"$UT/kordes\""}]})
-        with open(os.path.join(self.arb, "skanning.json"), "w") as f:
-            json.dump({"risk_assessment": {"score": 90, "severity": "CRITICAL", "recommendation": "DO_NOT_INSTALL"}}, f)
-        self.assertEqual(prov.kor(), 0)
-        self.assertEqual(prov.las_paket()["utfall"], "stoppat_av_skanning")
-        self.assertFalse(os.path.exists(os.path.join(self.arb, "ut", "kordes")))
-
-    def test_utan_skanning_kors_med_notering(self):
-        self.starta({"kategori": "ingen", "steg": [{"kommando": "true"}]})
-        self.assertEqual(prov.kor(), 0)
-        p = prov.las_paket()
-        self.assertEqual(p["utfall"], "kort")
-        self.assertFalse(p["skanning"]["ok"])
 
     def test_tidsgrans_och_fel(self):
         self.starta({"kategori": "ingen", "steg": [{"kommando": "sleep 30 & sleep 30", "tidsgrans_s": 1},

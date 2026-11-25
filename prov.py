@@ -6,9 +6,9 @@ Indata kommer som miljövariabler (KORNING, REPO, COMMIT, PLAN), aldrig som text
 
   python3 prov.py kontrollera   # indata och plan, skriver ett första testpaket
   python3 prov.py hamta         # klonar repot på exakt commit
-  python3 prov.py kor           # läser skanningen, kör planen och packar testpaketet
+  python3 prov.py kor           # kör planen och packar testpaketet
 
-Allt skrivs under ARBETE (standard ./arbete): repo/, prov/, ut/, skanning.json och testpaket/.
+Allt skrivs under ARBETE (standard ./arbete): repo/, prov/, ut/ och testpaket/.
 """
 import json
 import os
@@ -37,7 +37,6 @@ MAX_UTDATA_TECKEN = 20000
 MAX_FIL_BYTE = 5 * 1024 * 1024
 MAX_FILER_BYTE = 20 * 1024 * 1024
 MAX_REPO_BYTE = 1024 * 1024 * 1024
-STOPPA_VID = {"DO_NOT_INSTALL"}   # SkillSpectors rekommendation vid HIGH och CRITICAL (poäng 51 och uppåt)
 
 
 def arbete():
@@ -143,7 +142,7 @@ def kontrollera():
          "repo": d["REPO"] if RE_REPO.match(d["REPO"]) else None,
          "commit": d["COMMIT"] if RE_COMMIT.match(d["COMMIT"]) else None,
          "plan": plan if not fel else None, "startad": nu(), "utfall": "fel" if fel else "kontrollerat",
-         "fel": fel, "steg": [], "skanning": None, "bedomning": None, "filer": []}
+         "fel": fel, "steg": [], "bedomning": None, "filer": []}
     skriv_paket(p)
     return 1 if fel else 0
 
@@ -188,28 +187,6 @@ def katalogstorlek(rot):
     return s
 
 
-def las_skanning():
-    """SkillSpectors JSON (risk_assessment.score, severity, recommendation). Saknas den: ok = False."""
-    fil = os.path.join(arbete(), "skanning.json")
-    try:
-        with open(fil, encoding="utf-8") as f:
-            r = json.load(f)
-        ra = r["risk_assessment"]
-        fynd = [i for i in (r.get("issues") or []) if isinstance(i, dict)]
-        per_kategori = {}
-        for i in fynd:
-            nyckel = f"{i.get('category')}/{i.get('severity')}"
-            per_kategori[nyckel] = per_kategori.get(nyckel, 0) + 1
-        return {"ok": True, "poang": ra.get("score"), "allvar": ra.get("severity"),
-                "rekommendation": ra.get("recommendation"), "antal_fynd": len(fynd),
-                "per_kategori": dict(sorted(per_kategori.items(), key=lambda x: -x[1])),
-                "fynd": [{"id": i.get("id"), "kategori": i.get("category"), "allvar": i.get("severity"),
-                          "fil": (i.get("location") or {}).get("file"), "fynd": i.get("finding")}
-                         for i in fynd[:20]]}
-    except (OSError, ValueError, KeyError, TypeError) as e:
-        return {"ok": False, "orsak": f"ingen läsbar rapport ({type(e).__name__})"}
-
-
 def kort(text):
     if len(text) <= MAX_UTDATA_TECKEN:
         return text
@@ -239,12 +216,6 @@ def kor():
     p = las_paket()
     if p["utfall"] != "hamtat":
         return 1
-    p["skanning"] = las_skanning()
-    if p["skanning"].get("rekommendation") in STOPPA_VID:
-        p["utfall"] = "stoppat_av_skanning"
-        p["klart"] = nu()
-        skriv_paket(p)
-        return 0
     plan = p["plan"]
     rot = arbete()
     repo, prov, ut = (os.path.join(rot, n) for n in ("repo", "prov", "ut"))

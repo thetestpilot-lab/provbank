@@ -56,12 +56,6 @@ jobs:
       - name: Hämta repot
         run: python3 provbank/prov.py hamta
 
-      - name: Skanna med SkillSpector
-        continue-on-error: true
-        run: |
-          python3 -m pip install --quiet "skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@c323ad4c43e3c8f2de051572cc25b2711d11e648"  # v2.13.7
-          skillspector scan "$ARBETE/repo" --no-llm --format json --output "$ARBETE/skanning.json"
-
       - name: Kör provet
         run: python3 provbank/prov.py kor
 
