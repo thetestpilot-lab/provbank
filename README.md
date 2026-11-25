@@ -8,10 +8,11 @@ SkillSpector (NVIDIA) prövades som filter före körningen och togs bort 2026-1
 
 ## Flödet
 1. Kanalmotorn (servern) startar `prov.yml` med `workflow_dispatch` och fyra indata: `korning` (id), `repo` (`https://github.com/<ägare>/<repo>`), `commit` (40 hex) och `plan` (JSON, se nedan). Körningen heter `prov <korning>`, så att motorn hittar den.
-2. `prov.py kontrollera`: indata och plan mot reglerna. Fel ger `utfall: fel` och inget mer körs.
-3. `prov.py hamta`: `git fetch --depth 1` av exakt commit, utan lokala protokoll och utan krokar, högst 1 GB.
-4. `prov.py kor`: kopierar provuppgiften (`uppgifter/<kategori>/`) till `$PROV`, kör `installera` och `steg` i repots mapp med `bash -c`, tidsgräns per steg (högst 600 s, hela jobbet 25 min), stdout och stderr högst 20 000 tecken var. Faller en installation körs inga steg. Sedan `bedom.py` för kategorin om den finns, och filerna i `spara` (ur `$UT`, högst 5 MB var och 20 MB totalt).
-5. Testpaketet (`arbete/testpaket/`: `paket.json` och `filer/`) laddas upp som artefakten `testpaket-<korning>`, sparad 7 dagar.
+2. Typsnitt för skärmbilder (`fonts-noto-cjk`, `fonts-noto-color-emoji`), annars blir kinesisk text och emoji rutor (minimind 2026-11-25).
+3. `prov.py kontrollera`: indata och plan mot reglerna. Fel ger `utfall: fel` och inget mer körs.
+4. `prov.py hamta`: `git fetch --depth 1` av exakt commit, utan lokala protokoll och utan krokar, högst 1 GB.
+5. `prov.py kor`: kopierar provuppgiften (`uppgifter/<kategori>/`) till `$PROV`, kör `installera` och `steg` i repots mapp med `bash -c`, tidsgräns per steg (högst 600 s, hela jobbet 25 min), stdout och stderr högst 20 000 tecken var. Faller en installation körs inga steg. Sedan `bedom.py` för kategorin om den finns, och filerna i `spara` (ur `$UT`, högst 5 MB var och 20 MB totalt).
+6. Testpaketet (`arbete/testpaket/`: `paket.json` och `filer/`) laddas upp som artefakten `testpaket-<korning>`, sparad 7 dagar.
 
 ## Planen
 ```json

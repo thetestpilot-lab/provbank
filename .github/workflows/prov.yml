@@ -50,6 +50,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Typsnitt för skärmbilder (CJK och emoji)
+        run: sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk fonts-noto-color-emoji > /dev/null
+
       - name: Kontrollera indata
         run: python3 provbank/prov.py kontrollera
 
