@@ -96,7 +96,7 @@ class Kor(Bas):
                      "spara": ["svar.txt", "saknas.txt"]})
         with open(os.path.join(self.arb, "skanning.json"), "w") as f:
             json.dump({"risk_assessment": {"score": 10, "severity": "LOW", "recommendation": "SAFE"},
-                       "issues": [{"rule_id": "R1", "severity": "LOW", "message": "m", "file": "a"}]}, f)
+                       "issues": [{"id": "R1", "category": "exec", "severity": "LOW", "finding": "m", "location": {"file": "a"}}]}, f)
         self.assertEqual(prov.kor(), 0)
         p = prov.las_paket()
         self.assertEqual(p["utfall"], "kort")
@@ -104,6 +104,8 @@ class Kor(Bas):
         self.assertEqual(p["bedomning"], {"ratt": True})
         self.assertEqual(p["skanning"]["rekommendation"], "SAFE")
         self.assertEqual(p["skanning"]["antal_fynd"], 1)
+        self.assertEqual(p["skanning"]["per_kategori"], {"exec/LOW": 1})
+        self.assertEqual(p["skanning"]["fynd"][0]["fil"], "a")
         self.assertEqual(p["filer"][0]["byte"], 4)
         self.assertIn("fel", p["filer"][1])
         self.assertTrue(os.path.isfile(os.path.join(self.arb, "testpaket", "filer", "svar.txt")))

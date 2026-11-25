@@ -195,10 +195,17 @@ def las_skanning():
         with open(fil, encoding="utf-8") as f:
             r = json.load(f)
         ra = r["risk_assessment"]
+        fynd = [i for i in (r.get("issues") or []) if isinstance(i, dict)]
+        per_kategori = {}
+        for i in fynd:
+            nyckel = f"{i.get('category')}/{i.get('severity')}"
+            per_kategori[nyckel] = per_kategori.get(nyckel, 0) + 1
         return {"ok": True, "poang": ra.get("score"), "allvar": ra.get("severity"),
-                "rekommendation": ra.get("recommendation"), "antal_fynd": len(r.get("issues") or []),
-                "fynd": [{k: i.get(k) for k in ("rule_id", "severity", "message", "file")}
-                         for i in (r.get("issues") or [])[:20] if isinstance(i, dict)]}
+                "rekommendation": ra.get("recommendation"), "antal_fynd": len(fynd),
+                "per_kategori": dict(sorted(per_kategori.items(), key=lambda x: -x[1])),
+                "fynd": [{"id": i.get("id"), "kategori": i.get("category"), "allvar": i.get("severity"),
+                          "fil": (i.get("location") or {}).get("file"), "fynd": i.get("finding")}
+                         for i in fynd[:20]]}
     except (OSError, ValueError, KeyError, TypeError) as e:
         return {"ok": False, "orsak": f"ingen läsbar rapport ({type(e).__name__})"}
 
