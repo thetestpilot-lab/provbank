@@ -1,0 +1,74 @@
+# Provbänken: kör ett främmande repo mot en fast provuppgift och sparar testpaketet som artefakt.
+# Startas bara av kanalmotorn (workflow_dispatch). Inga secrets finns i repot, och jobbet har inga rättigheter.
+# Indata går till skriptet som miljövariabler, aldrig som ${{ }} i ett run-skript (skriptinjektion).
+name: prov
+run-name: prov ${{ inputs.korning }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      korning:
+        description: Körningens id (a-z, 0-9, bindestreck)
+        required: true
+        type: string
+      repo:
+        description: https://github.com/<ägare>/<repo>
+        required: true
+        type: string
+      commit:
+        description: Exakt commit, 40 hex-tecken
+        required: true
+        type: string
+      plan:
+        description: Testplanen som JSON
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: prov
+  cancel-in-progress: false
+
+jobs:
+  prov:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      KORNING: ${{ inputs.korning }}
+      REPO: ${{ inputs.repo }}
+      COMMIT: ${{ inputs.commit }}
+      PLAN: ${{ inputs.plan }}
+      ARBETE: ${{ github.workspace }}/arbete
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          path: provbank
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Kontrollera indata
+        run: python3 provbank/prov.py kontrollera
+
+      - name: Hämta repot
+        run: python3 provbank/prov.py hamta
+
+      - name: Skanna med SkillSpector
+        continue-on-error: true
+        run: |
+          python3 -m pip install --quiet "skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@c323ad4c43e3c8f2de051572cc25b2711d11e648"  # v2.13.7
+          skillspector scan "$ARBETE/repo" --no-llm --format json --output "$ARBETE/skanning.json"
+
+      - name: Kör provet
+        run: python3 provbank/prov.py kor
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: testpaket-${{ inputs.korning }}
+          path: arbete/testpaket
+          retention-days: 7
+          if-no-files-found: error

@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+secrets.yaml
+*.pem
+*.key
+*token*.json
+arbete/
+data/
+state/
+*.log
+*.bak-*
+__pycache__/
+*.pyc
+.venv/
